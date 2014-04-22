@@ -1,5 +1,11 @@
 .. algorithm:: Rebin
 
+Usage
+-----
+.. code-block:: python
+
+  ws = Rebin(ws, Params="1")
+
 Description
 -----------
 
