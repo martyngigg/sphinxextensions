@@ -17,7 +17,7 @@ import sys, os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../sphinxext'))
-sys.path.insert(0, "/mnt/data1/GitHub/mantid-master/builds/relwithdbg/bin")
+sys.path.insert(0, "/mnt/data1/GitHub/mantid-develop/builds/relwithdbg/bin")
 
 # -- General configuration -----------------------------------------------------
 
@@ -26,7 +26,8 @@ sys.path.insert(0, "/mnt/data1/GitHub/mantid-master/builds/relwithdbg/bin")
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.pngmath', 'sphinx.ext.viewcode', 'sphinxext.algorithm']
+extensions = ['sphinx.ext.pngmath', 'sphinx.ext.viewcode', 
+              'mantiddoc.algorithm']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
