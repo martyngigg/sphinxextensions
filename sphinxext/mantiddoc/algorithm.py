@@ -12,7 +12,7 @@ from docutils.parsers.rst import Directive
 #
 HEADER_TEMPLATE = \
 """
-.. _%(name)s
+.. _algorithm|%(name)s:
 
 %(name)s
 %(underline)s
