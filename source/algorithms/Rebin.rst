@@ -47,3 +47,6 @@ This, however, means that specified bin boundaries might get amended in the proc
 * From 0 rebin in bins of size 2 **up to 4**. 4.5 is ignored, because otherwise we would need to create a filling bin of size 0.5.
 * **From 4** rebin in bins of size 3 **up to 10**.
 Hence the actual *Param* string used is "0, 2, 4, 3, 10".
+
+
+.. categories:: Rebin

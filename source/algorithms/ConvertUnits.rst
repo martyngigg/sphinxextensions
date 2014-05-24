@@ -2,3 +2,7 @@
 
 Description
 -----------
+
+Convert X units
+
+.. categories:: ConvertUnits

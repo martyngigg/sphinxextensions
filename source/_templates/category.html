@@ -1,0 +1,54 @@
+{# Import the theme's layout. #}
+{% extends "!layout.html" %}
+
+{%- block body -%}
+	<h1> Category: {{ title }} </h1>
+
+	{% if subcategories %}
+	<br>
+	<h2> Subcategories </h2>
+
+	{# Sort into 3 columns #}
+	{# Uses bootstrap col-md-4 for each column along with slice(3) to divide list #}
+	
+	<div class="row">
+
+	{%- set prev_col_final_sect = "" %}
+		{%- for column in subcategories|slice(3) %}
+	    <div class="col-md-4">
+        {%- set first = True %}
+	    {%- for item in column %}
+	       {%- if (item[0] != section or first) %}
+		           {%- set section = item[0] %}
+	           {%- set suffix = "" %}
+	           {%- if first != true %}
+	               </ul>
+	           {%- else %}
+	               {%- if section == prev_col_final_sect %}
+	                  {%- set suffix = " (cont'd)" %}
+	               {%- endif %}
+	           {%- endif %}
+	           <h3 style="font-weight:bold">{{ section }}{{ suffix }}</h3>
+	           <ul>
+	        {%- endif %}
+	        <li>{{ item }}</li>
+	        {%- set first = False %}
+	    {%- endfor %} 
+	    </div>
+    {%- set prev_col_final_sect = column[-1][0] %}
+	{%- endfor %}
+	</div>
+
+	<hr>
+	{% endif %}
+
+	<h2> Pages </h2>
+	<hr>
+
+	<ul>
+    {%- for algorithm, link in algorithms %}
+      <li><a href={{ link }}>{{ algorithm }}</a></li>
+    {%- endfor %}
+	</ul>
+
+{%- endblock -%}

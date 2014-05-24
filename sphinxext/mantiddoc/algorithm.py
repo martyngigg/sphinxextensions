@@ -27,6 +27,19 @@ Properties
 %(proptable)s
 """
 
+class Rebin(object):
+
+    def initialize(self):
+        pass
+
+    def getWikiSummary(self):
+        return "Rebin histogram to new bins"
+
+    def alias(self):
+        return "rebin"
+
+################################################
+
 class AlgorithmDirective(Directive):
     """
     Insert additional reST text for an algorithm preamble
@@ -59,8 +72,8 @@ class AlgorithmDirective(Directive):
         """
         Return the page header for the named algorithm
         """
-        from mantid.api import AlgorithmManager # will only happen once
-        alg = AlgorithmManager.createUnmanaged(algorithm_name)
+        #from mantid.api import AlgorithmManager # will only happen once
+        alg = Rebin() #AlgorithmManager.createUnmanaged(algorithm_name)
         alg.initialize()
         summary = alg.getWikiSummary()
         
