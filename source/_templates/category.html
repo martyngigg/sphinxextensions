@@ -13,13 +13,15 @@
 	
 	<div class="row">
 
+	testing|{{ subcategories }}
+
 	{%- set prev_col_final_sect = "" %}
 		{%- for column in subcategories|slice(3) %}
 	    <div class="col-md-4">
         {%- set first = True %}
 	    {%- for item in column %}
-	       {%- if (item[0] != section or first) %}
-		           {%- set section = item[0] %}
+	       {%- if (item.name[0] != section or first) %}
+		           {%- set section = item.name[0] %}
 	           {%- set suffix = "" %}
 	           {%- if first != true %}
 	               </ul>
@@ -31,11 +33,11 @@
 	           <h3 style="font-weight:bold">{{ section }}{{ suffix }}</h3>
 	           <ul>
 	        {%- endif %}
-	        <li>{{ item }}</li>
+	        <li>{{ item.name }}</li>
 	        {%- set first = False %}
 	    {%- endfor %} 
 	    </div>
-    {%- set prev_col_final_sect = column[-1][0] %}
+    {# {%- set prev_col_final_sect = column[-1][0] %} #}
 	{%- endfor %}
 	</div>
 
@@ -46,8 +48,8 @@
 	<hr>
 
 	<ul>
-    {%- for algorithm, link in algorithms %}
-      <li><a href={{ link }}>{{ algorithm }}</a></li>
+    {%- for page_ref in pages %}
+      <li><a href="{{ page_ref.link }}">{{ page_ref.name }}</a></li>
     {%- endfor %}
 	</ul>
 

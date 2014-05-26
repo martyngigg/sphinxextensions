@@ -48,5 +48,4 @@ This, however, means that specified bin boundaries might get amended in the proc
 * **From 4** rebin in bins of size 3 **up to 10**.
 Hence the actual *Param* string used is "0, 2, 4, 3, 10".
 
-
-.. categories:: Rebin
+.. categories:: Algorithms Transforms\\Rebin

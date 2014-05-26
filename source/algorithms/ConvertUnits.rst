@@ -5,4 +5,4 @@ Description
 
 Convert X units
 
-.. categories:: ConvertUnits
+.. categories:: Algorithms Transforms
