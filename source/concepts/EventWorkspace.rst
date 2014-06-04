@@ -6,4 +6,4 @@ EventWorkspace
 
 Event workspaces hold events.
 
-Rebin with :ref:`algorithm|Rebin`
+Rebin with :ref:`algm-Rebin`

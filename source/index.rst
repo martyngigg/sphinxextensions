@@ -9,7 +9,13 @@ Welcome to mantid's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :glob:
+   :hidden:
+   :maxdepth: 1
+
+   algorithms/*
+   concepts/*
+..   functions/*
 
 
 
