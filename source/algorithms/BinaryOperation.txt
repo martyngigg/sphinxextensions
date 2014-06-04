@@ -1,0 +1,13 @@
+ OutputWorkspace = LHSWorkspace |symbol| RHSWorkspace
+
+The algorithm will perform the |symbol| operation on the data and associated errors from any two compatible workspaces.
+Workspaces are compatible if:
+
+* The sizes of the two workspaces are compatible (see below)
+* If the two workspaces contain Y bins then the values in these must be identical
+* the units of the axes match
+* the distribution status/counts units match
+
+Workspaces are compatible if they are identically sized in which case the values of each cell within each histogram are |verb| individually.  The green arrows shows the order in which the data is |verb|.
+
+They are also compatible if they match the size dimension horizontally, in which case the same values are |verb| |prep| each histogram in the workspace.
