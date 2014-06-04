@@ -12,8 +12,9 @@ from docutils.parsers.rst import Directive
 #
 HEADER_TEMPLATE = \
 """
-.. _algorithm|%(name)s:
+.. _algm-%(name)s:
 
+%(underline)s
 %(name)s
 %(underline)s
 %(summary)s
@@ -96,4 +97,3 @@ class AlgorithmDirective(Directive):
 def setup(app):
     # Add new directive
     app.add_directive('algorithm', AlgorithmDirective)
-
