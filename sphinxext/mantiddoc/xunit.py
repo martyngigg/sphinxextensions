@@ -7,6 +7,8 @@
 # Name of file produced by doctest target. It is assumed that it is created
 # in app.outdir
 DOCTEST_OUTPUT = "output.txt"
+# Name of output file that the resultant XUnit output is saved
+XUNIT_OUTPUT = "doctest.xml"
 
 DOCTEST_DOCUMENT_BEGIN = "Document:"
 DOCTEST_SUMMARY_TITLE = "Doctest summary"
@@ -86,8 +88,12 @@ def doctest_to_xunit(app, exception):
         return
     import os
 
-    txtfile_path = os.path.join(app.builder.outdir, DOCTEST_OUTPUT)
-    
+    doctest_file = os.path.join(app.builder.outdir, DOCTEST_OUTPUT)
+    doctests = DocTestOutput(doctest_file)
+    #xunit_file = os.path.join(app.builder.outdir, XUNIT_OUTPUT)
+    #doctests.to_xunit()
+
+#-------------------------------------------------------------------------------
 
 def setup(app):
     """
