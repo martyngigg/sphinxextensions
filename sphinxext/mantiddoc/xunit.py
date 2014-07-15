@@ -18,8 +18,6 @@ TESTSUITE_SUMMARY_RE = "\d items passed all tests:"
 #-------------------------------------------------------------------------------
 class TestSuite(object):
 
-    
-
     def __init__(self, result_txt):
         """
         Initialize the object with the ASCII output text for a single
@@ -31,6 +29,11 @@ class TestSuite(object):
                              "beginning '%s'" % DOCTEST_DOCUMENT_BEGIN)
         self.fullname = first_line.replace(DOCTEST_DOCUMENT_BEGIN, "").strip()
         
+#-------------------------------------------------------------------------------
+class TestCase(object):
+    
+    def __init__(self):
+        pass
         
 #-------------------------------------------------------------------------------
 class DocTestOutput(object):

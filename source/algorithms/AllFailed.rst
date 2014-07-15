@@ -54,18 +54,19 @@ Usage
 
 .. testcode:: Ex1
    
-   print "Successful test"
+   print "Single line failed test"
 
 .. testoutput:: Ex1
 
-   Successful test
+   No match
 
 .. testcode:: Ex2
    
-   print "Successful test number 2"
+   print "Multi-line failed"
+   print "test"
 
 .. testoutput:: Ex2
 
-   Successful test number 2
+   No match
 
 .. categories:: Algorithms Transforms\\Rebin

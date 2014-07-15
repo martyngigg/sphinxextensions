@@ -52,19 +52,19 @@ Hence the actual *Param* string used is "0, 2, 4, 3, 10".
 Usage
 -----
 
-.. testcode:: Ex1
+.. testcode::
    
    print "Successful test"
 
-.. testoutput:: Ex1
+.. testoutput::
 
    Successful test
 
-.. testcode:: Ex2
+.. testcode::
    
    print "Successful test number 2"
 
-.. testoutput:: Ex2
+.. testoutput::
 
    Successful test number 2
 
