@@ -3,93 +3,95 @@
     If the builder is doctest then it post-processes the
     output file to produce an XUnit-style XML file that can be
     more easily parse by CI servers such as Jenkins.
-"""
-# -------------- Output file structure ------------------
-# The following outcomes are possible for a given
-# document:
-#  - all tests pass;
-#  - all tests fail;
-#  - and some test pass and some fail.
-#
-# Below are examples of the output for each of the above
-# outcomes, given a document named 'FooDoc' in a
-# directory 'bar'relative to the documentation root.
-#
-# - All Passed:
-#  ============
-#
-# Document: bar/FooDoc
-# --------------------
-# 1 items passed all tests:
-#    2 tests in default
-#    1 tests in ExForFoo
-# 2 tests in 1 items.
-# 2 passed and 0 failed.
-# Test passed.
-#
-# - All Failed:
-#  ============
-#
-# Document: bar/FooDoc
-# --------------------
-# **********************************************************************
-# File "bar/FooDoc.rst", line 127, in Ex2
-# Failed example:
-#     print "Multi-line failed"
-#     print "test"
-# Expected:
-#     No match
-# Got:
-#     Multi-line failed
-#     test
-# **********************************************************************
-# File "bar/FooDoc.rst", line 111, in Ex1
-# Failed example:
-#     print "Single line failed test"
-# Expected:
-#     No match
-# Got:
-#     Single line failed test
-# **********************************************************************
-# 2 items had failures:
-#    1 of   1 in Ex1
-#    1 of   1 in Ex2
-# 2 tests in 2 items.
-# 0 passed and 2 failed.
-# ***Test Failed*** 2 failures.
-#
-#
-# - Some pass some fail:
-#   ====================
-#
-# Document: bar/FooDoc
-# --------------------
-# **********************************************************************
-# File "bar/FooDoc.rst", line 127, in default
-# Failed example:
-#     print "A failed test"
-# Expected:
-#     Not a success
-# Got:
-#     A failed test
-# **********************************************************************
-# File "bar/FooDoc.rst", line 143, in Ex1
-# Failed example:
-#     print "Second failed test"
-# Expected:
-#     Not a success again
-# Got:
-#     Second failed test
-# **********************************************************************
-# 2 items had failures:
-#    1 of   1 in Ex1
-#    1 of   2 in default
-# 3 tests in 2 items.
-# 1 passed and 2 failed.
-# ***Test Failed*** 2 failures.
-#
 
-#-------------------------------------------------------------------------------
+    Output file structure
+    ~~~~~~~~~~~~~~~~~~~~~
+
+    The following outcomes are possible for a given
+    document:
+     - all tests pass;
+     - all tests fail;
+     - and some test pass and some fail.
+
+    Below are examples of the output for each of the above
+    outcomes, given a document named 'FooDoc' in a
+    directory 'bar'relative to the documentation root.
+
+    - All Passed:
+     ============
+
+    Document: bar/FooDoc
+    --------------------
+    1 items passed all tests:
+       2 tests in default
+       1 tests in ExForFoo
+    2 tests in 1 items.
+    2 passed and 0 failed.
+    Test passed.
+
+    - All Failed:
+     ============
+
+    Document: bar/FooDoc
+    --------------------
+    **********************************************************************
+    File "bar/FooDoc.rst", line 127, in Ex2
+    Failed example:
+        print "Multi-line failed"
+        print "test"
+    Expected:
+        No match
+    Got:
+        Multi-line failed
+        test
+    **********************************************************************
+    File "bar/FooDoc.rst", line 111, in Ex1
+    Failed example:
+        print "Single line failed test"
+    Expected:
+        No match
+    Got:
+        Single line failed test
+    **********************************************************************
+    2 items had failures:
+       1 of   1 in Ex1
+       1 of   1 in Ex2
+    2 tests in 2 items.
+    0 passed and 2 failed.
+    ***Test Failed*** 2 failures.
+
+
+    - Some pass some fail:
+      ====================
+
+    Document: bar/FooDoc
+    --------------------
+    **********************************************************************
+    File "bar/FooDoc.rst", line 127, in default
+    Failed example:
+        print "A failed test"
+    Expected:
+        Not a success
+    Got:
+        A failed test
+    **********************************************************************
+    File "bar/FooDoc.rst", line 143, in Ex1
+    Failed example:
+        print "Second failed test"
+    Expected:
+        Not a success again
+    Got:
+        Second failed test
+    **********************************************************************
+    2 items had failures:
+       1 of   1 in Ex1
+       1 of   2 in default
+    3 tests in 2 items.
+    1 passed and 2 failed.
+    ***Test Failed*** 2 failures.
+
+"""
+import re
 
 # Name of file produced by doctest target. It is assumed that it is created
 # in app.outdir
@@ -99,11 +101,13 @@ DOCTEST_OUTPUT = "output.txt"
 XUNIT_OUTPUT = "doctest.xml"
 
 #-------------------------------------------------------------------------------
-# Regexes
+# Defining text
 DOCTEST_DOCUMENT_BEGIN = "Document:"
 DOCTEST_SUMMARY_TITLE = "Doctest summary"
-ALL_PASS_SUMMARY_RE = "\d items passed all tests:"
 
+# Regexes
+ALLPASS_SUMMARY_RE = re.compile(r"^(\d+) items passed all tests:$")
+ALLPASS_TEST_NAMES_RE = re.compile(r"^\s+(\d+) tests in (.+)$")
 
 #-------------------------------------------------------------------------------
 class TestSuite(object):
@@ -130,9 +134,21 @@ class TestSuite(object):
           str: Fullname of test
         """
         fullname = self.__extract_fullname(result_txt[0])
-        return fullname, []
+        if not result_txt[1].startswith("-"):
+            raise ValueError("Invalid second line of output: '%s'. "\
+                             "Expected a title underline."
+                             % result_txt[1])
 
-    def __extract_fullname(first_line):
+        result_txt = result_txt[2:] # trim of top two lines
+        if result_txt[0].startswith("*"):
+            print "TODO: Failure cases"
+            testcases = []
+        else:
+            # assume all passed
+            testcases = self.__parse_success(result_txt)
+        return fullname, testcases
+
+    def __extract_fullname(self, first_line):
         """
         Extract the document name from the line of text.
 
@@ -144,12 +160,40 @@ class TestSuite(object):
                              "beginning '%s'" % DOCTEST_DOCUMENT_BEGIN)
         return first_line.replace(DOCTEST_DOCUMENT_BEGIN, "").strip()
 
+    def __parse_success(self, result_txt):
+        """
+        Parse text for success cases for a single document
+
+        Args:
+          result_txt (str): String containing doctest output for
+                            document
+        """
+        match = ALLPASS_SUMMARY_RE.match(result_txt[0])
+        if not match:
+            raise ValueError("All passed line incorrect: '%s'"
+                             % result_txt[0])
+        nitems = int(match.group(1))
+        cases = []
+        for line in result_txt[1:1+nitems]:
+            match = ALLPASS_TEST_NAMES_RE.match(line)
+            if not match:
+                raise ValueError("Unexpected information line in "
+                                 "all pass case: %s" % line)
+            ntests, name = int(match.group(1)), match.group(2)
+            for idx in range(ntests):
+                cases.append(TestCase(name, TestCase.Success))
+        #endfor
+        return cases
 
 #-------------------------------------------------------------------------------
 class TestCase(object):
 
-    def __init__(self):
-        pass
+    Success = 0
+    Failed = 1
+
+    def __init__(self, name, status):
+        self.name = name
+        self.status = status
 
 #-------------------------------------------------------------------------------
 class DocTestOutput(object):
@@ -184,11 +228,12 @@ class DocTestOutput(object):
                     suites.append(TestSuite(document_txt))
                 document_txt = [line]
                 in_doc = True
+                continue
             if line.startswith(DOCTEST_SUMMARY_TITLE):
                 in_doc = False
             if in_doc and line != "":
                 document_txt.append(line)
-
+        # endif
         return suites
 
 #-------------------------------------------------------------------------------
