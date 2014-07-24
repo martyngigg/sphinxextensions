@@ -112,20 +112,64 @@ ALLPASS_TEST_NAMES_RE = re.compile(r"^\s+(\d+) tests in (.+)$")
 #-------------------------------------------------------------------------------
 class TestSuite(object):
 
-    def __init__(self, result_txt):
-        """
-        Initialize the object with the ASCII output text for a single
-        document. Creates TestCase objects
+    def __init__(self, fullname, cases):
+        self.fullname = fullname
+        self.testcases = cases
 
-        Args:
-          result_txt (str): String containing doctest output for
-                            document
-        """
-        self.fullname, self.testcases = self.__parse(result_txt)
+#-------------------------------------------------------------------------------
+class TestCase(object):
 
-    def __parse(self, result_txt):
+    Success = 0
+    Failed = 1
+
+    def __init__(self, name, status):
+        self.name = name
+        self.status = status
+
+#-------------------------------------------------------------------------------
+class DocTestOutputParser(object):
+    """
+    Process a doctest output file and convert it
+    to a different format
+    """
+
+    def __init__(self, filename):
+        with open(filename,'r') as result_file:
+            self.testsuites = self.__parse(result_file)
+
+    def __parse(self, result_file):
         """
-        Create TestCase objects for each test
+        Parse a doctest output file and produce a set
+        of TestSuite objects that describe the results
+        of the all tests on a single document
+
+        Arguments:
+          result_file (File): File-like object
+
+        Returns:
+          list: List of TestSuite objects
+        """
+        in_doc = False
+        document_txt = []
+        suites = []
+        for line in result_file:
+            if line.startswith(DOCTEST_DOCUMENT_BEGIN):
+                # parse previous results
+                if document_txt:
+                    suites.append(self.__parse_suite(document_txt))
+                document_txt = [line]
+                in_doc = True
+                continue
+            if line.startswith(DOCTEST_SUMMARY_TITLE):
+                in_doc = False
+            if in_doc and line != "":
+                document_txt.append(line)
+        # endif
+        return suites
+
+    def __parse_suite(self, result_txt):
+        """
+        Create a TestSuite object for this document
 
         Args:
           result_txt (str): String containing doctest output for
@@ -146,7 +190,8 @@ class TestSuite(object):
         else:
             # assume all passed
             testcases = self.__parse_success(result_txt)
-        return fullname, testcases
+
+        return TestSuite(fullname, testcases)
 
     def __extract_fullname(self, first_line):
         """
@@ -186,57 +231,6 @@ class TestSuite(object):
         return cases
 
 #-------------------------------------------------------------------------------
-class TestCase(object):
-
-    Success = 0
-    Failed = 1
-
-    def __init__(self, name, status):
-        self.name = name
-        self.status = status
-
-#-------------------------------------------------------------------------------
-class DocTestOutput(object):
-    """
-    Process a doctest output file and convert it
-    to a different format
-    """
-
-    def __init__(self, filename):
-        with open(filename,'r') as result_file:
-            self.testsuites = self.__parse(result_file)
-
-    def __parse(self, result_file):
-        """
-        Parse a doctest output file and produce a set
-        of TestSuite objects that describe the results
-        of the all tests on a single document
-
-        Arguments:
-          result_file (File): File-like object
-
-        Returns:
-          list: List of TestSuite objects
-        """
-        in_doc = False
-        document_txt = []
-        suites = []
-        for line in result_file:
-            if line.startswith(DOCTEST_DOCUMENT_BEGIN):
-                # parse previous results
-                if document_txt:
-                    suites.append(TestSuite(document_txt))
-                document_txt = [line]
-                in_doc = True
-                continue
-            if line.startswith(DOCTEST_SUMMARY_TITLE):
-                in_doc = False
-            if in_doc and line != "":
-                document_txt.append(line)
-        # endif
-        return suites
-
-#-------------------------------------------------------------------------------
 
 def doctest_to_xunit(app, exception):
     """
@@ -253,7 +247,7 @@ def doctest_to_xunit(app, exception):
     import os
 
     doctest_file = os.path.join(app.builder.outdir, DOCTEST_OUTPUT)
-    doctests = DocTestOutput(doctest_file)
+    doctests = DocTestOutputParser(doctest_file)
     #xunit_file = os.path.join(app.builder.outdir, XUNIT_OUTPUT)
     #doctests.to_xunit()
 
