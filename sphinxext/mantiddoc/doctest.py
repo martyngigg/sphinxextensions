@@ -92,13 +92,14 @@
 
 """
 import re
+import xml.etree.ElementTree as ElementTree
 
 # Name of file produced by doctest target. It is assumed that it is created
 # in app.outdir
 DOCTEST_OUTPUT = "output.txt"
 # Name of output file that the resultant XUnit output is saved
 # @todo make this a configuration variable
-XUNIT_OUTPUT = "doctest.xml"
+XUNIT_OUTPUT = "doctests.xml"
 
 #-------------------------------------------------------------------------------
 # Defining text
@@ -112,17 +113,24 @@ ALLPASS_TEST_NAMES_RE = re.compile(r"^\s+(\d+) tests in (.+)$")
 #-------------------------------------------------------------------------------
 class TestSuite(object):
 
-    def __init__(self, fullname, cases):
-        self.fullname = fullname
+    def __init__(self, name, cases, package=None):
+        self.name = name
         self.testcases = cases
+        self.package = package
+
+    @property
+    def ntests(self):
+        return len(self.testcases)
 
 #-------------------------------------------------------------------------------
 class TestCase(object):
 
-    Success = 0
+    # Enumerations for test status
+    Passed = 0
     Failed = 1
 
-    def __init__(self, name, status):
+    def __init__(self, classname, name, status):
+        self.classname = classname
         self.name = name
         self.status = status
 
@@ -135,28 +143,44 @@ class DocTestOutputParser(object):
 
     def __init__(self, filename):
         with open(filename,'r') as result_file:
-            self.testsuites = self.__parse(result_file)
+            self.testsuite = self.__parse(result_file)
+
+    def as_xunit(self, filename):
+        """
+        Write out the test results in Xunit-style format
+        """
+        cases = self.testsuite.testcases
+        suite_node = ElementTree.Element("doctests")
+        suite_node.attrib["tests"] = str(len(cases))
+        for testcase in cases:
+            case_node = ElementTree.SubElement(suite_node, "testcase")
+            case_node.attrib["classname"] = testcase.classname
+            case_node.attrib["name"] = testcase.name
+
+        # Serialize to file
+        tree = ElementTree.ElementTree(suite_node)
+        tree.write(filename, encoding="utf-8", xml_declaration=True)
 
     def __parse(self, result_file):
         """
-        Parse a doctest output file and produce a set
-        of TestSuite objects that describe the results
-        of the all tests on a single document
+        Parse a doctest output file and a TestSuite
+        object that describe the results of the
+        all tests on a single document
 
         Arguments:
           result_file (File): File-like object
 
         Returns:
-          list: List of TestSuite objects
+          TestSuite: TestSuite object
         """
         in_doc = False
         document_txt = []
-        suites = []
+        cases = []
         for line in result_file:
             if line.startswith(DOCTEST_DOCUMENT_BEGIN):
                 # parse previous results
                 if document_txt:
-                    suites.append(self.__parse_suite(document_txt))
+                    cases.extend(self.__parse_cases(document_txt))
                 document_txt = [line]
                 in_doc = True
                 continue
@@ -165,11 +189,12 @@ class DocTestOutputParser(object):
             if in_doc and line != "":
                 document_txt.append(line)
         # endif
-        return suites
+        return TestSuite(name="doctests", cases=cases,
+                         package="doctests")
 
-    def __parse_suite(self, result_txt):
+    def __parse_cases(self, result_txt):
         """
-        Create a TestSuite object for this document
+        Create a list of TestCase object for this document
 
         Args:
           result_txt (str): String containing doctest output for
@@ -189,9 +214,9 @@ class DocTestOutputParser(object):
             testcases = []
         else:
             # assume all passed
-            testcases = self.__parse_success(result_txt)
+            testcases = self.__parse_success(fullname, result_txt)
 
-        return TestSuite(fullname, testcases)
+        return testcases
 
     def __extract_fullname(self, first_line):
         """
@@ -205,11 +230,12 @@ class DocTestOutputParser(object):
                              "beginning '%s'" % DOCTEST_DOCUMENT_BEGIN)
         return first_line.replace(DOCTEST_DOCUMENT_BEGIN, "").strip()
 
-    def __parse_success(self, result_txt):
+    def __parse_success(self, fullname, result_txt):
         """
         Parse text for success cases for a single document
 
         Args:
+          fullname (str): String containing full name of document
           result_txt (str): String containing doctest output for
                             document
         """
@@ -217,6 +243,7 @@ class DocTestOutputParser(object):
         if not match:
             raise ValueError("All passed line incorrect: '%s'"
                              % result_txt[0])
+        classname = fullname.split("/")[-1]
         nitems = int(match.group(1))
         cases = []
         for line in result_txt[1:1+nitems]:
@@ -226,7 +253,7 @@ class DocTestOutputParser(object):
                                  "all pass case: %s" % line)
             ntests, name = int(match.group(1)), match.group(2)
             for idx in range(ntests):
-                cases.append(TestCase(name, TestCase.Success))
+                cases.append(TestCase(classname, name, TestCase.Passed))
         #endfor
         return cases
 
@@ -248,8 +275,8 @@ def doctest_to_xunit(app, exception):
 
     doctest_file = os.path.join(app.builder.outdir, DOCTEST_OUTPUT)
     doctests = DocTestOutputParser(doctest_file)
-    #xunit_file = os.path.join(app.builder.outdir, XUNIT_OUTPUT)
-    #doctests.to_xunit()
+    xunit_file = os.path.join(app.builder.outdir, XUNIT_OUTPUT)
+    doctests.as_xunit(xunit_file)
 
 #-------------------------------------------------------------------------------
 
