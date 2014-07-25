@@ -100,15 +100,19 @@ DOCTEST_OUTPUT = "output.txt"
 # Name of output file that the resultant XUnit output is saved
 # @todo make this a configuration variable
 XUNIT_OUTPUT = "doctests.xml"
+# Error type string
+TEST_FAILURE_TYPE = "UsageFailure"
 
 #-------------------------------------------------------------------------------
-# Defining text
+# Define parts of lines that denote a document
 DOCTEST_DOCUMENT_BEGIN = "Document:"
 DOCTEST_SUMMARY_TITLE = "Doctest summary"
 
 # Regexes
 ALLPASS_SUMMARY_RE = re.compile(r"^(\d+) items passed all tests:$")
 ALLPASS_TEST_NAMES_RE = re.compile(r"^\s+(\d+) tests in (.+)$")
+FAILURE_LOC_INFO_RE = re.compile(r'^File "([\w\/]+)\.rst", line (\d+), in (\w+)$')
+NUMBER_FAILURES_RE = re.compile(r"^(\d+) items had failures:$")
 
 #-------------------------------------------------------------------------------
 class TestSuite(object):
@@ -122,17 +126,32 @@ class TestSuite(object):
     def ntests(self):
         return len(self.testcases)
 
+    @property
+    def nfailures(self):
+        def sum_failure(fails, case):
+            if case.failed: return fails + 1
+            else: return fails
+        return reduce(sum_failure, self.testcases, 0)
+
+    @property
+    def npassed(self):
+        return self.ntests - self.nfailures
+
 #-------------------------------------------------------------------------------
 class TestCase(object):
 
-    # Enumerations for test status
-    Passed = 0
-    Failed = 1
-
-    def __init__(self, classname, name, status):
+    def __init__(self, classname, name, failure_descr):
         self.classname = classname
         self.name = name
-        self.status = status
+        self.failure_descr = failure_descr
+
+    @property
+    def passed(self):
+        return (self.failure_descr is None)
+
+    @property
+    def failed(self):
+        return not self.passed
 
 #-------------------------------------------------------------------------------
 class DocTestOutputParser(object):
@@ -150,13 +169,18 @@ class DocTestOutputParser(object):
         Write out the test results in Xunit-style format
         """
         cases = self.testsuite.testcases
-        suite_node = ElementTree.Element("doctests")
-        suite_node.attrib["tests"] = str(len(cases))
+        suite_node = ElementTree.Element("testsuite")
+        suite_node.attrib["name"] = self.testsuite.name
+        suite_node.attrib["tests"] = str(self.testsuite.ntests)
+        suite_node.attrib["failures"] = str(self.testsuite.nfailures)
         for testcase in cases:
             case_node = ElementTree.SubElement(suite_node, "testcase")
             case_node.attrib["classname"] = testcase.classname
             case_node.attrib["name"] = testcase.name
-
+            if testcase.failed:
+                failure_node = ElementTree.SubElement(case_node, "failure")
+                failure_node.attrib["type"] = TEST_FAILURE_TYPE
+                failure_node.text = testcase.failure_descr
         # Serialize to file
         tree = ElementTree.ElementTree(suite_node)
         tree.write(filename, encoding="utf-8", xml_declaration=True)
@@ -208,10 +232,10 @@ class DocTestOutputParser(object):
                              "Expected a title underline."
                              % result_txt[1])
 
-        result_txt = result_txt[2:] # trim of top two lines
+        result_txt = result_txt[2:] # trim off top two lines
         if result_txt[0].startswith("*"):
             print "TODO: Failure cases"
-            testcases = []
+            testcases = self.__parse_failure(fullname, result_txt)
         else:
             # assume all passed
             testcases = self.__parse_success(fullname, result_txt)
@@ -243,7 +267,7 @@ class DocTestOutputParser(object):
         if not match:
             raise ValueError("All passed line incorrect: '%s'"
                              % result_txt[0])
-        classname = fullname.split("/")[-1]
+        classname = fullname.split("/")[-1] if "/" in fullname else fullname
         nitems = int(match.group(1))
         cases = []
         for line in result_txt[1:1+nitems]:
@@ -253,9 +277,47 @@ class DocTestOutputParser(object):
                                  "all pass case: %s" % line)
             ntests, name = int(match.group(1)), match.group(2)
             for idx in range(ntests):
-                cases.append(TestCase(classname, name, TestCase.Passed))
+                cases.append(TestCase(classname, name, failure_descr=None))
         #endfor
         return cases
+
+    def __parse_failure(self, fullname, result_txt):
+        """
+        Parse text for failure cases for a single document
+
+        Args:
+          fullname (str): String containing full name of document
+          result_txt (str): String containing doctest output for
+                            document
+        """
+        # set all text between *** markers as failure text
+        classname = fullname.split("/")[-1] if "/" in fullname else fullname
+        cases = []
+        failure_txt = []
+        testname = None
+        for line in result_txt:
+            if line.startswith("*****"):
+                if len(failure_txt) > 0:
+                    # end of previous failure
+                    cases.append(TestCase(classname, testname, "".join(failure_txt)))
+                    failure_txt = []
+                # skip these lines whatever happens
+                continue
+            # grab details of failure
+            if len(failure_txt) == 0:
+                match = FAILURE_LOC_INFO_RE.match(line.rstrip())
+            if match: # first line
+                testname = match.group(3)
+            match = NUMBER_FAILURES_RE.match(line)
+            if match:
+                # end of all failure text
+                break
+            else:
+                failure_txt.append(line)
+        # endfor
+
+        return cases
+
 
 #-------------------------------------------------------------------------------
 
