@@ -82,12 +82,14 @@
         Not a success again
     Got:
         Second failed test
+    1 items passed all tests:
+        1 tests in Ex3
     **********************************************************************
     2 items had failures:
        1 of   1 in Ex1
        1 of   2 in default
-    3 tests in 2 items.
-    1 passed and 2 failed.
+    4 tests in 3 items.
+    2 passed and 2 failed.
     ***Test Failed*** 2 failures.
 
 """
@@ -109,9 +111,9 @@ DOCTEST_DOCUMENT_BEGIN = "Document:"
 DOCTEST_SUMMARY_TITLE = "Doctest summary"
 
 # Regexes
-ALLPASS_SUMMARY_RE = re.compile(r"^(\d+) items passed all tests:$")
 ALLPASS_TEST_NAMES_RE = re.compile(r"^\s+(\d+) tests in (.+)$")
 FAILURE_LOC_INFO_RE = re.compile(r'^File "([\w\/]+)\.rst", line (\d+), in (\w+)$')
+NUMBER_PASSED_RE = re.compile(r"^(\d+) items passed all tests:$")
 NUMBER_FAILURES_RE = re.compile(r"^(\d+) items had failures:$")
 
 #-------------------------------------------------------------------------------
@@ -204,7 +206,7 @@ class DocTestOutputParser(object):
             if line.startswith(DOCTEST_DOCUMENT_BEGIN):
                 # parse previous results
                 if document_txt:
-                    cases.extend(self.__parse_cases(document_txt))
+                    cases.extend(self.__parse_document(document_txt))
                 document_txt = [line]
                 in_doc = True
                 continue
@@ -216,7 +218,7 @@ class DocTestOutputParser(object):
         return TestSuite(name="doctests", cases=cases,
                          package="doctests")
 
-    def __parse_cases(self, result_txt):
+    def __parse_document(self, result_txt):
         """
         Create a list of TestCase object for this document
 
@@ -235,7 +237,7 @@ class DocTestOutputParser(object):
         result_txt = result_txt[2:] # trim off top two lines
         if result_txt[0].startswith("*"):
             print "TODO: Failure cases"
-            testcases = self.__parse_failure(fullname, result_txt)
+            testcases = self.__parse_failures(fullname, result_txt)
         else:
             # assume all passed
             testcases = self.__parse_success(fullname, result_txt)
@@ -263,7 +265,7 @@ class DocTestOutputParser(object):
           result_txt (str): String containing doctest output for
                             document
         """
-        match = ALLPASS_SUMMARY_RE.match(result_txt[0])
+        match = NUMBER_PASSED_RE.match(result_txt[0])
         if not match:
             raise ValueError("All passed line incorrect: '%s'"
                              % result_txt[0])
@@ -281,7 +283,7 @@ class DocTestOutputParser(object):
         #endfor
         return cases
 
-    def __parse_failure(self, fullname, result_txt):
+    def __parse_failures(self, fullname, result_txt):
         """
         Parse text for failure cases for a single document
 
@@ -295,6 +297,7 @@ class DocTestOutputParser(object):
         cases = []
         failure_txt = []
         testname = None
+        fails_parsed = False
         for line in result_txt:
             if line.startswith("*****"):
                 if len(failure_txt) > 0:
@@ -303,14 +306,16 @@ class DocTestOutputParser(object):
                     failure_txt = []
                 # skip these lines whatever happens
                 continue
-            # grab details of failure
+            # details of failure
             if len(failure_txt) == 0:
                 match = FAILURE_LOC_INFO_RE.match(line.rstrip())
-            if match: # first line
-                testname = match.group(3)
+                if match: # first line
+                    testname = match.group(3)
+            # line saying number of failures or passes marks end of failure text
             match = NUMBER_FAILURES_RE.match(line)
             if match:
-                # end of all failure text
+                # end of all failure descriptions
+                fails_parsed = True
                 break
             else:
                 failure_txt.append(line)

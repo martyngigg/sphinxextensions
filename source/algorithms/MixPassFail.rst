@@ -29,7 +29,7 @@ Example Rebin param strings
 For EventWorkspaces
 -------------------
 
-If the input is an :ref:`EventWorkspace` and the "Preserve Events" property is True, the rebinning is performed in place, and only the X axes of the workspace are set. The actual Y histogram data will only be requested as needed, for example, when plotting or displaying the data. 
+If the input is an :ref:`EventWorkspace` and the "Preserve Events" property is True, the rebinning is performed in place, and only the X axes of the workspace are set. The actual Y histogram data will only be requested as needed, for example, when plotting or displaying the data.
 
 If "Preserve Events" is false., then the output workspace will be created as a [`Workspace2D <Workspace2D>`_], with fixed histogram bins, and all Y data will be computed immediately. All event-specific data is lost at that point.
 
@@ -53,15 +53,23 @@ Usage
 -----
 
 .. testcode::
-   
+
    print "Successful test"
 
 .. testoutput::
 
    Successful test
 
+.. testcode:: Ex3
+
+   print "Successful test 2"
+
+.. testoutput:: Ex3
+
+   Successful test 2
+
 .. testcode::
-   
+
    print "A failed test"
 
 .. testoutput::
@@ -69,7 +77,7 @@ Usage
    Not a success
 
 .. testcode:: Ex1
-   
+
    print "Second failed test"
 
 .. testoutput:: Ex1
