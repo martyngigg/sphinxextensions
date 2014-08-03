@@ -52,6 +52,14 @@ Hence the actual *Param* string used is "0, 2, 4, 3, 10".
 Usage
 -----
 
+.. testcode:: NotDefaultGroup
+
+   print "not default group"
+
+.. testoutput:: NotDefaultGroup
+
+   not default group
+
 .. testcode::
 
    print "Successful test"
