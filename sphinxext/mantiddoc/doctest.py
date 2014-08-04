@@ -417,7 +417,7 @@ class DocTestOutputParser(object):
         Args:
           fullname (str): Fullname of document (including paths)
         """
-        return fullname.replace("/", ".")
+        return "docs." + fullname
 
     def __create_failure_report(self, classname, failure_desc):
         """
