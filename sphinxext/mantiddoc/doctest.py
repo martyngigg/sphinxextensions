@@ -264,8 +264,7 @@ class DocTestOutputParser(object):
             if in_doc and line != "":
                 document_txt.append(line)
         # endfor
-        return TestSuiteReport(name="doctests", cases=cases,
-                               package="docs")
+        return TestSuiteReport(name="doctests", cases=cases)
 
     def __parse_document(self, results):
         """
